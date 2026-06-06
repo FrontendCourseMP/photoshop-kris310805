@@ -4,9 +4,16 @@ import { decodeGB7, encodeGB7 } from './GB7Processor';
 interface ToolbarProps {
   onImageLoaded: (imageData: ImageData) => void;
   onGB7Loaded: (imageData: ImageData, bitsPerPixel: number, hasMask: boolean) => void;
+  isEyedropperActive?: boolean;
+  onToggleEyedropper?: () => void;
 }
 
-export default function Toolbar({ onImageLoaded, onGB7Loaded }: ToolbarProps) {
+export default function Toolbar({ 
+  onImageLoaded, 
+  onGB7Loaded, 
+  isEyedropperActive = false, 
+  onToggleEyedropper 
+}: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -18,7 +25,6 @@ export default function Toolbar({ onImageLoaded, onGB7Loaded }: ToolbarProps) {
     reader.onload = async (e) => {
       const result = e.target?.result;
       if (typeof result === 'string') {
-        // PNG/JPG как base64
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -31,7 +37,6 @@ export default function Toolbar({ onImageLoaded, onGB7Loaded }: ToolbarProps) {
         };
         img.src = result;
       } else if (result instanceof ArrayBuffer) {
-        // GB7 файл
         try {
           const { imageData, bitsPerPixel, hasMask } = decodeGB7(result);
           onGB7Loaded(imageData, bitsPerPixel, hasMask);
@@ -91,10 +96,18 @@ export default function Toolbar({ onImageLoaded, onGB7Loaded }: ToolbarProps) {
         onChange={handleFileUpload}
         style={{ display: 'none' }}
       />
-      <button onClick={() => fileInputRef.current?.click()}>Загрузить изображение</button>
-      <button onClick={downloadAsPNG}>Скачать как PNG</button>
-      <button onClick={downloadAsJPG}>Скачать как JPG</button>
-      <button onClick={downloadAsGB7}>Скачать как GB7</button>
+      <button onClick={() => fileInputRef.current?.click()}>📁 Загрузить изображение</button>
+      <button onClick={downloadAsPNG}>💾 Скачать как PNG</button>
+      <button onClick={downloadAsJPG}>💾 Скачать как JPG</button>
+      <button onClick={downloadAsGB7}>💾 Скачать как GB7</button>
+      {onToggleEyedropper && (
+        <button 
+          className={isEyedropperActive ? 'active' : ''}
+          onClick={onToggleEyedropper}
+        >
+          🖌️ Пипетка {isEyedropperActive ? '(ON)' : '(OFF)'}
+        </button>
+      )}
     </div>
   );
 }
