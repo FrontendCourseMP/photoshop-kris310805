@@ -1,7 +1,7 @@
 # Технологии компьютерной графики - Лабораторные работы
 
 ## Ссылка на хостинг
-https://frontendcoursemp.github.io/photoshop-kris310805
+https://willowy-bienenstitch-f61bae.netlify.app
 
 ## Все лабораторные работы
 
