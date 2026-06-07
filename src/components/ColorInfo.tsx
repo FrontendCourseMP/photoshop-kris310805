@@ -24,14 +24,11 @@ export default function ColorInfo({ onPickColor, isActive, onActivate }: ColorIn
   const [coordinates, setCoordinates] = useState<{ x: number; y: number } | null>(null);
   const [labColor, setLabColor] = useState<LabColor | null>(null);
 
-  // Функция конвертации RGB в CIELAB
   const rgbToLab = (r: number, g: number, b: number): LabColor => {
-    // Нормализуем RGB
     let var_R = r / 255;
     let var_G = g / 255;
     let var_B = b / 255;
 
-    // Конвертация в XYZ
     const toXYZ = (channel: number) => {
       if (channel > 0.04045) {
         return Math.pow((channel + 0.055) / 1.055, 2.4);
@@ -43,12 +40,10 @@ export default function ColorInfo({ onPickColor, isActive, onActivate }: ColorIn
     var_G = toXYZ(var_G);
     var_B = toXYZ(var_B);
 
-    // Observer = 2°, Illuminant = D65
     const x = var_R * 0.4124564 + var_G * 0.3575761 + var_B * 0.1804375;
     const y = var_R * 0.2126729 + var_G * 0.7151522 + var_B * 0.0721750;
     const z = var_R * 0.0193339 + var_G * 0.1191920 + var_B * 0.9503041;
 
-    // Конвертация XYZ в Lab
     const toLab = (value: number) => {
       const epsilon = 0.008856;
       const kappa = 903.3;
@@ -68,12 +63,12 @@ export default function ColorInfo({ onPickColor, isActive, onActivate }: ColorIn
     const zr = toLab(z / zRef);
 
     const L = Math.max(0, Math.min(100, 116 * yr - 16));
-    const a = 500 * (xr - yr);
+    const aVal = 500 * (xr - yr);
     const bVal = 200 * (yr - zr);
 
     return {
       L: Math.round(L * 100) / 100,
-      a: Math.round(a * 100) / 100,
+      a: Math.round(aVal * 100) / 100,
       b: Math.round(bVal * 100) / 100,
     };
   };
@@ -84,7 +79,6 @@ export default function ColorInfo({ onPickColor, isActive, onActivate }: ColorIn
     setLabColor(rgbToLab(rgb.r, rgb.g, rgb.b));
   };
 
-  // Регистрируем callback для получения цвета
   useState(() => {
     onPickColor(handleColorPick);
   });

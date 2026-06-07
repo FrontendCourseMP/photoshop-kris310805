@@ -8,7 +8,7 @@ interface CanvasAreaProps {
 
 export default function CanvasArea({ canvasRef, onClick, isEyedropperActive = false }: CanvasAreaProps) {
   return (
-    <div className="canvas-container" style={{ position: 'relative' }}>
+    <div className="canvas-container">
       <canvas 
         ref={canvasRef} 
         onClick={onClick}

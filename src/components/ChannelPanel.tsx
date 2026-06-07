@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
 
-interface ChannelPanelProps {
-  originalImageData: ImageData | null;
-  onChannelsChange: (channels: ChannelState) => void;
-}
-
 export interface ChannelState {
   red: boolean;
   green: boolean;
@@ -12,9 +7,14 @@ export interface ChannelState {
   alpha: boolean;
 }
 
+interface ChannelPanelProps {
+  imageData: ImageData | null;
+  onChannelsChange: (channels: ChannelState) => void;
+}
+
 type ChannelMode = 'grayscale' | 'grayscale-alpha' | 'rgb' | 'rgb-alpha';
 
-export default function ChannelPanel({ originalImageData, onChannelsChange }: ChannelPanelProps) {
+export default function ChannelPanel({ imageData, onChannelsChange }: ChannelPanelProps) {
   const [channelState, setChannelState] = useState<ChannelState>({
     red: true,
     green: true,
@@ -22,84 +22,60 @@ export default function ChannelPanel({ originalImageData, onChannelsChange }: Ch
     alpha: true,
   });
   const [mode, setMode] = useState<ChannelMode>('rgb-alpha');
-  const [thumbnails, setThumbnails] = useState<{ [key: string]: string }>({});
+  const [thumbnails, setThumbnails] = useState<{ [key: string]: string }>({
+    red: '',
+    green: '',
+    blue: '',
+    alpha: '',
+  });
 
-  // Генерация миниатюр для каждого канала
   useEffect(() => {
-    if (!originalImageData) return;
+    if (!imageData) return;
 
-    const generateThumbnail = (channelFilter: (r: number, g: number, b: number, a: number) => [number, number, number, number]) => {
+    const generateThumbnail = (getValue: (r: number, g: number, b: number, a: number) => [number, number, number, number]) => {
+      const width = Math.min(imageData.width, 80);
+      const height = Math.min(imageData.height, 80);
+      
       const canvas = document.createElement('canvas');
-      const width = Math.min(originalImageData.width, 100); // Ограничиваем размер миниатюры
-      const height = Math.min(originalImageData.height, 100);
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       
-      // Масштабируем изображение для миниатюры
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = width;
-      tempCanvas.height = height;
-      const tempCtx = tempCanvas.getContext('2d');
       const imgData = new ImageData(width, height);
-      
-      // Простой downsampling
-      const scaleX = originalImageData.width / width;
-      const scaleY = originalImageData.height / height;
+      const scaleX = imageData.width / width;
+      const scaleY = imageData.height / height;
       
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const srcX = Math.floor(x * scaleX);
           const srcY = Math.floor(y * scaleY);
-          const idx = (srcY * originalImageData.width + srcX) * 4;
+          const idx = (srcY * imageData.width + srcX) * 4;
           
-          const r = originalImageData.data[idx];
-          const g = originalImageData.data[idx + 1];
-          const b = originalImageData.data[idx + 2];
-          const a = originalImageData.data[idx + 3];
+          const r = imageData.data[idx];
+          const g = imageData.data[idx + 1];
+          const b = imageData.data[idx + 2];
+          const a = imageData.data[idx + 3];
           
-          const [nr, ng, nb, na] = channelFilter(r, g, b, a);
-          imgData.data[(y * width + x) * 4] = nr;
-          imgData.data[(y * width + x) * 4 + 1] = ng;
-          imgData.data[(y * width + x) * 4 + 2] = nb;
-          imgData.data[(y * width + x) * 4 + 3] = na;
+          const [nr, ng, nb, na] = getValue(r, g, b, a);
+          const destIdx = (y * width + x) * 4;
+          imgData.data[destIdx] = nr;
+          imgData.data[destIdx + 1] = ng;
+          imgData.data[destIdx + 2] = nb;
+          imgData.data[destIdx + 3] = na;
         }
       }
       
-      tempCtx?.putImageData(imgData, 0, 0);
-      return tempCanvas.toDataURL();
+      ctx?.putImageData(imgData, 0, 0);
+      return canvas.toDataURL();
     };
 
-    const thumbnailsData: { [key: string]: string } = {};
-
-    // Режим 1: Grayscale
-    thumbnailsData.grayscale = generateThumbnail((r, g, b, a) => {
-      const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-      return [gray, gray, gray, a];
+    setThumbnails({
+      red: generateThumbnail((r) => [r, 0, 0, 255]),
+      green: generateThumbnail((_r, g) => [0, g, 0, 255]),
+      blue: generateThumbnail((_r, _g, b) => [0, 0, b, 255]),
+      alpha: generateThumbnail((_r, _g, _b, a) => [a, a, a, 255]),
     });
-
-    // Режим 2: Grayscale + Alpha
-    thumbnailsData.grayscaleAlpha = generateThumbnail((r, g, b, a) => {
-      const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-      return [gray, gray, gray, a];
-    });
-
-    // RGB каналы отдельно (в градациях серого)
-    thumbnailsData.red = generateThumbnail((r) => [r, r, r, 255]);
-    thumbnailsData.green = generateThumbnail((r, g) => [g, g, g, 255]);
-    thumbnailsData.blue = generateThumbnail((r, g, b) => [b, b, b, 255]);
-    
-    // Alpha канал (в градациях серого)
-    thumbnailsData.alpha = generateThumbnail((r, g, b, a) => [a, a, a, 255]);
-
-    // RGB цветной
-    thumbnailsData.rgb = generateThumbnail((r, g, b, a) => [r, g, b, a]);
-    
-    // RGB + Alpha
-    thumbnailsData.rgbAlpha = generateThumbnail((r, g, b, a) => [r, g, b, a]);
-
-    setThumbnails(thumbnailsData);
-  }, [originalImageData]);
+  }, [imageData]);
 
   const toggleChannel = (channel: keyof ChannelState) => {
     const newState = { ...channelState, [channel]: !channelState[channel] };
@@ -129,8 +105,8 @@ export default function ChannelPanel({ originalImageData, onChannelsChange }: Ch
     onChannelsChange(newChannelState);
   };
 
-  if (!originalImageData) {
-    return <div className="channel-panel">Загрузите изображение для просмотра каналов</div>;
+  if (!imageData) {
+    return <div className="channel-panel">Загрузите изображение</div>;
   }
 
   return (
@@ -138,77 +114,46 @@ export default function ChannelPanel({ originalImageData, onChannelsChange }: Ch
       <h3>Цветовые каналы</h3>
       
       <div className="channel-mode-selector">
-        <button 
-          className={mode === 'grayscale' ? 'active' : ''}
-          onClick={() => setModeAndChannels('grayscale')}
-        >
+        <button className={mode === 'grayscale' ? 'active' : ''} onClick={() => setModeAndChannels('grayscale')}>
           Grayscale
         </button>
-        <button 
-          className={mode === 'grayscale-alpha' ? 'active' : ''}
-          onClick={() => setModeAndChannels('grayscale-alpha')}
-        >
+        <button className={mode === 'grayscale-alpha' ? 'active' : ''} onClick={() => setModeAndChannels('grayscale-alpha')}>
           Grayscale + Alpha
         </button>
-        <button 
-          className={mode === 'rgb' ? 'active' : ''}
-          onClick={() => setModeAndChannels('rgb')}
-        >
+        <button className={mode === 'rgb' ? 'active' : ''} onClick={() => setModeAndChannels('rgb')}>
           RGB
         </button>
-        <button 
-          className={mode === 'rgb-alpha' ? 'active' : ''}
-          onClick={() => setModeAndChannels('rgb-alpha')}
-        >
+        <button className={mode === 'rgb-alpha' ? 'active' : ''} onClick={() => setModeAndChannels('rgb-alpha')}>
           RGB + Alpha
         </button>
       </div>
 
       <div className="channels-grid">
         <div className="channel-item">
-          <img src={thumbnails.red} alt="Red channel" />
+          <img src={thumbnails.red} alt="Red" />
           <label>
-            <input 
-              type="checkbox" 
-              checked={channelState.red} 
-              onChange={() => toggleChannel('red')}
-            />
+            <input type="checkbox" checked={channelState.red} onChange={() => toggleChannel('red')} />
             Red
           </label>
         </div>
-        
         <div className="channel-item">
-          <img src={thumbnails.green} alt="Green channel" />
+          <img src={thumbnails.green} alt="Green" />
           <label>
-            <input 
-              type="checkbox" 
-              checked={channelState.green} 
-              onChange={() => toggleChannel('green')}
-            />
+            <input type="checkbox" checked={channelState.green} onChange={() => toggleChannel('green')} />
             Green
           </label>
         </div>
-        
         <div className="channel-item">
-          <img src={thumbnails.blue} alt="Blue channel" />
+          <img src={thumbnails.blue} alt="Blue" />
           <label>
-            <input 
-              type="checkbox" 
-              checked={channelState.blue} 
-              onChange={() => toggleChannel('blue')}
-            />
+            <input type="checkbox" checked={channelState.blue} onChange={() => toggleChannel('blue')} />
             Blue
           </label>
         </div>
-        
         <div className="channel-item">
-          <img src={thumbnails.alpha} alt="Alpha channel" />
+          <img src={thumbnails.alpha} alt="Alpha" />
           <label>
-            <input 
-              type="checkbox" 
-              checked={channelState.alpha} 
-              onChange={() => toggleChannel('alpha')}
-            />
+            <input type="checkbox" checked={channelState.alpha} onChange={() => toggleChannel('alpha')} />
             Alpha
           </label>
         </div>

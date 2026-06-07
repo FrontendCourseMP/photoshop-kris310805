@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type RefObject } from 'react';
 import { decodeGB7, encodeGB7 } from './GB7Processor';
 
 interface ToolbarProps {
@@ -6,13 +6,17 @@ interface ToolbarProps {
   onGB7Loaded: (imageData: ImageData, bitsPerPixel: number, hasMask: boolean) => void;
   isEyedropperActive?: boolean;
   onToggleEyedropper?: () => void;
+  onOpenLevels?: () => void;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
 export default function Toolbar({ 
   onImageLoaded, 
   onGB7Loaded, 
   isEyedropperActive = false, 
-  onToggleEyedropper 
+  onToggleEyedropper,
+  onOpenLevels,
+  canvasRef
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -22,7 +26,7 @@ export default function Toolbar({
 
     const reader = new FileReader();
     
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       const result = e.target?.result;
       if (typeof result === 'string') {
         const img = new Image();
@@ -55,8 +59,11 @@ export default function Toolbar({
   };
 
   const downloadAsPNG = () => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      alert('Нет изображения для сохранения');
+      return;
+    }
     const link = document.createElement('a');
     link.download = 'image.png';
     link.href = canvas.toDataURL('image/png');
@@ -64,8 +71,11 @@ export default function Toolbar({
   };
 
   const downloadAsJPG = () => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      alert('Нет изображения для сохранения');
+      return;
+    }
     const link = document.createElement('a');
     link.download = 'image.jpg';
     link.href = canvas.toDataURL('image/jpeg', 0.92);
@@ -73,8 +83,11 @@ export default function Toolbar({
   };
 
   const downloadAsGB7 = () => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      alert('Нет изображения для сохранения');
+      return;
+    }
     const ctx = canvas.getContext('2d');
     const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
     if (!imageData) return;
@@ -106,6 +119,11 @@ export default function Toolbar({
           onClick={onToggleEyedropper}
         >
           🖌️ Пипетка {isEyedropperActive ? '(ON)' : '(OFF)'}
+        </button>
+      )}
+      {onOpenLevels && (
+        <button onClick={onOpenLevels}>
+          📊 Уровни (Levels)
         </button>
       )}
     </div>
