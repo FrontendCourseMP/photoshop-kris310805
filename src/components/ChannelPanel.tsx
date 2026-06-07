@@ -12,8 +12,6 @@ interface ChannelPanelProps {
   onChannelsChange: (channels: ChannelState) => void;
 }
 
-type ChannelMode = 'grayscale' | 'grayscale-alpha' | 'rgb' | 'rgb-alpha';
-
 export default function ChannelPanel({ imageData, onChannelsChange }: ChannelPanelProps) {
   const [channelState, setChannelState] = useState<ChannelState>({
     red: true,
@@ -21,8 +19,7 @@ export default function ChannelPanel({ imageData, onChannelsChange }: ChannelPan
     blue: true,
     alpha: true,
   });
-  const [mode, setMode] = useState<ChannelMode>('rgb-alpha');
-  const [thumbnails, setThumbnails] = useState<{ [key: string]: string }>({
+  const [thumbnails, setThumbnails] = useState({
     red: '',
     green: '',
     blue: '',
@@ -33,20 +30,18 @@ export default function ChannelPanel({ imageData, onChannelsChange }: ChannelPan
     if (!imageData) return;
 
     const generateThumbnail = (getValue: (r: number, g: number, b: number, a: number) => [number, number, number, number]) => {
-      const width = Math.min(imageData.width, 80);
-      const height = Math.min(imageData.height, 80);
-      
+      const size = 60;
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = size;
+      canvas.height = size;
       const ctx = canvas.getContext('2d');
       
-      const imgData = new ImageData(width, height);
-      const scaleX = imageData.width / width;
-      const scaleY = imageData.height / height;
+      const imgData = new ImageData(size, size);
+      const scaleX = imageData.width / size;
+      const scaleY = imageData.height / size;
       
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
           const srcX = Math.floor(x * scaleX);
           const srcY = Math.floor(y * scaleY);
           const idx = (srcY * imageData.width + srcX) * 4;
@@ -57,7 +52,7 @@ export default function ChannelPanel({ imageData, onChannelsChange }: ChannelPan
           const a = imageData.data[idx + 3];
           
           const [nr, ng, nb, na] = getValue(r, g, b, a);
-          const destIdx = (y * width + x) * 4;
+          const destIdx = (y * size + x) * 4;
           imgData.data[destIdx] = nr;
           imgData.data[destIdx + 1] = ng;
           imgData.data[destIdx + 2] = nb;
@@ -83,28 +78,6 @@ export default function ChannelPanel({ imageData, onChannelsChange }: ChannelPan
     onChannelsChange(newState);
   };
 
-  const setModeAndChannels = (newMode: ChannelMode) => {
-    setMode(newMode);
-    let newChannelState: ChannelState;
-    
-    switch (newMode) {
-      case 'grayscale':
-        newChannelState = { red: true, green: true, blue: true, alpha: false };
-        break;
-      case 'grayscale-alpha':
-        newChannelState = { red: true, green: true, blue: true, alpha: true };
-        break;
-      case 'rgb':
-        newChannelState = { red: true, green: true, blue: true, alpha: false };
-        break;
-      case 'rgb-alpha':
-        newChannelState = { red: true, green: true, blue: true, alpha: true };
-        break;
-    }
-    setChannelState(newChannelState);
-    onChannelsChange(newChannelState);
-  };
-
   if (!imageData) {
     return <div className="channel-panel">Загрузите изображение</div>;
   }
@@ -112,22 +85,6 @@ export default function ChannelPanel({ imageData, onChannelsChange }: ChannelPan
   return (
     <div className="channel-panel">
       <h3>Цветовые каналы</h3>
-      
-      <div className="channel-mode-selector">
-        <button className={mode === 'grayscale' ? 'active' : ''} onClick={() => setModeAndChannels('grayscale')}>
-          Grayscale
-        </button>
-        <button className={mode === 'grayscale-alpha' ? 'active' : ''} onClick={() => setModeAndChannels('grayscale-alpha')}>
-          Grayscale + Alpha
-        </button>
-        <button className={mode === 'rgb' ? 'active' : ''} onClick={() => setModeAndChannels('rgb')}>
-          RGB
-        </button>
-        <button className={mode === 'rgb-alpha' ? 'active' : ''} onClick={() => setModeAndChannels('rgb-alpha')}>
-          RGB + Alpha
-        </button>
-      </div>
-
       <div className="channels-grid">
         <div className="channel-item">
           <img src={thumbnails.red} alt="Red" />

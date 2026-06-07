@@ -5,15 +5,18 @@ import Toolbar from './components/Toolbar';
 import ChannelPanel, { type ChannelState } from './components/ChannelPanel';
 import ColorInfo from './components/ColorInfo';
 import LevelsTool from './components/LevelsTool';
+import ResizeTool from './components/ResizeTool';
+import { resizeImage } from './utils/imageResize';
 import './App.css';
 
-export interface ImageDataState {
+interface ImageDataState {
   width: number;
   height: number;
   colorDepth: number;
   imageData: ImageData | null;
   loadedOriginal: ImageData | null;
   workingOriginal: ImageData | null;
+  displayOriginal: ImageData | null;
   hasMask: boolean;
 }
 
@@ -25,6 +28,7 @@ function App() {
     imageData: null,
     loadedOriginal: null,
     workingOriginal: null,
+    displayOriginal: null,
     hasMask: false,
   });
   
@@ -37,6 +41,8 @@ function App() {
   
   const [isEyedropperActive, setIsEyedropperActive] = useState(false);
   const [isLevelsOpen, setIsLevelsOpen] = useState(false);
+  const [isResizeOpen, setIsResizeOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
   const [colorPickCallback, setColorPickCallback] = useState<((x: number, y: number, color: any) => void) | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -68,43 +74,68 @@ function App() {
     return newImageData;
   };
 
-  // Обновляем canvas при изменении каналов
-  useEffect(() => {
+  // Применяем масштаб к изображению для отображения
+  const applyZoom = (sourceImage: ImageData, zoom: number): ImageData => {
+    if (zoom === 100 || !sourceImage) return sourceImage;
+    
+    const newWidth = Math.round(sourceImage.width * (zoom / 100));
+    const newHeight = Math.round(sourceImage.height * (zoom / 100));
+    
+    return resizeImage(sourceImage, newWidth, newHeight, 'bilinear');
+  };
+
+  // Обновляем canvas при изменении каналов или масштаба
+  const updateCanvasDisplay = () => {
     if (!imageState.workingOriginal) return;
     
-    const modifiedImageData = applyChannels(imageState.workingOriginal, channelState);
-    setImageState(prev => ({ ...prev, imageData: modifiedImageData }));
+    // Сначала применяем каналы
+    const withChannels = applyChannels(imageState.workingOriginal, channelState);
+    // Потом применяем масштаб для отображения
+    const withZoom = applyZoom(withChannels, zoomLevel);
+    
+    setImageState(prev => ({ ...prev, imageData: withZoom, displayOriginal: withChannels }));
     
     const canvas = canvasRef.current;
-    if (canvas && modifiedImageData) {
-      canvas.width = modifiedImageData.width;
-      canvas.height = modifiedImageData.height;
+    if (canvas && withZoom) {
+      canvas.width = withZoom.width;
+      canvas.height = withZoom.height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.putImageData(modifiedImageData, 0, 0);
+        ctx.putImageData(withZoom, 0, 0);
       }
     }
-  }, [channelState, imageState.workingOriginal]);
+  };
 
-  // Загрузка нового изображения
+  useEffect(() => {
+    updateCanvasDisplay();
+  }, [channelState, zoomLevel, imageState.workingOriginal]);
+
+  // Загрузка нового изображения с авто-масштабированием
   const updateCanvasFromImageData = (imgData: ImageData) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    // Сохраняем загруженный оригинал (никогда не меняется)
+    // Сохраняем оригиналы
     const loadedCopy = new ImageData(imgData.width, imgData.height);
     loadedCopy.data.set(imgData.data);
     
-    // Сохраняем рабочий оригинал (будет меняться после уровней)
     const workingCopy = new ImageData(imgData.width, imgData.height);
     workingCopy.data.set(imgData.data);
     
-    canvas.width = imgData.width;
-    canvas.height = imgData.height;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.putImageData(imgData, 0, 0);
+    // Автоматический масштаб, чтобы изображение поместилось в canvas
+    const container = document.querySelector('.canvas-container');
+    const maxWidth = (container?.clientWidth || 800) - 40;
+    const maxHeight = 500;
+    let autoZoom = 100;
+    
+    if (imgData.width > maxWidth || imgData.height > maxHeight) {
+      const scaleX = maxWidth / imgData.width;
+      const scaleY = maxHeight / imgData.height;
+      autoZoom = Math.min(scaleX, scaleY) * 100;
+      autoZoom = Math.min(300, Math.max(12, Math.round(autoZoom)));
     }
+    
+    setZoomLevel(autoZoom);
     
     setImageState({
       width: imgData.width,
@@ -113,44 +144,42 @@ function App() {
       imageData: imgData,
       loadedOriginal: loadedCopy,
       workingOriginal: workingCopy,
+      displayOriginal: workingCopy,
       hasMask: false,
     });
     
-    // Сбрасываем каналы
     setChannelState({ red: true, green: true, blue: true, alpha: true });
   };
 
-  // Обработчик клика для пипетки
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isEyedropperActive || !colorPickCallback || !imageState.imageData) return;
+    if (!isEyedropperActive || !colorPickCallback || !imageState.displayOriginal) return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const scaleX = imageState.displayOriginal!.width / rect.width;
+    const scaleY = imageState.displayOriginal!.height / rect.height;
     
     let mouseX = (e.clientX - rect.left) * scaleX;
     let mouseY = (e.clientY - rect.top) * scaleY;
     
-    mouseX = Math.max(0, Math.min(mouseX, canvas.width - 1));
-    mouseY = Math.max(0, Math.min(mouseY, canvas.height - 1));
+    mouseX = Math.max(0, Math.min(mouseX, imageState.displayOriginal!.width - 1));
+    mouseY = Math.max(0, Math.min(mouseY, imageState.displayOriginal!.height - 1));
     
     const x = Math.floor(mouseX);
     const y = Math.floor(mouseY);
     
-    const idx = (y * canvas.width + x) * 4;
+    const idx = (y * imageState.displayOriginal!.width + x) * 4;
     const color = {
-      r: imageState.imageData.data[idx],
-      g: imageState.imageData.data[idx + 1],
-      b: imageState.imageData.data[idx + 2],
-      a: imageState.imageData.data[idx + 3],
+      r: imageState.displayOriginal!.data[idx],
+      g: imageState.displayOriginal!.data[idx + 1],
+      b: imageState.displayOriginal!.data[idx + 2],
+      a: imageState.displayOriginal!.data[idx + 3],
     };
     colorPickCallback(x, y, color);
   };
 
-  // Обработчик загрузки GB7
   const handleGB7Loaded = (imgData: ImageData, bitsPerPixel: number, hasMask: boolean) => {
     const loadedCopy = new ImageData(imgData.width, imgData.height);
     loadedCopy.data.set(imgData.data);
@@ -165,55 +194,52 @@ function App() {
       imageData: imgData,
       loadedOriginal: loadedCopy,
       workingOriginal: workingCopy,
+      displayOriginal: workingCopy,
       hasMask: hasMask,
     });
     setChannelState({ red: true, green: true, blue: true, alpha: true });
-    
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.width = imgData.width;
-      canvas.height = imgData.height;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.putImageData(imgData, 0, 0);
-      }
-    }
+    setZoomLevel(100);
   };
 
-  // Обработчик применения уровней
   const handleApplyLevels = (adjustedImageData: ImageData) => {
-    // Обновляем только workingOriginal, loadedOriginal остаётся нетронутым
     const newWorkingCopy = new ImageData(adjustedImageData.width, adjustedImageData.height);
     newWorkingCopy.data.set(adjustedImageData.data);
     
     setImageState(prev => ({
       ...prev,
-      imageData: adjustedImageData,
       workingOriginal: newWorkingCopy,
+      displayOriginal: newWorkingCopy,
       width: adjustedImageData.width,
       height: adjustedImageData.height,
     }));
+  };
+
+  const handleApplyResize = (resizedImageData: ImageData) => {
+    const newWorkingCopy = new ImageData(resizedImageData.width, resizedImageData.height);
+    newWorkingCopy.data.set(resizedImageData.data);
     
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.width = adjustedImageData.width;
-      canvas.height = adjustedImageData.height;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.putImageData(adjustedImageData, 0, 0);
-      }
-    }
+    setImageState(prev => ({
+      ...prev,
+      workingOriginal: newWorkingCopy,
+      displayOriginal: newWorkingCopy,
+      width: resizedImageData.width,
+      height: resizedImageData.height,
+      loadedOriginal: newWorkingCopy,
+    }));
+    
+    setZoomLevel(100);
   };
 
   return (
     <div className="app">
-      <h1>Технологии компьютерной графики - Лаба №3</h1>
+      <h1>Технологии компьютерной графики - Лаба №4</h1>
       <Toolbar 
         onImageLoaded={updateCanvasFromImageData}
         onGB7Loaded={handleGB7Loaded}
         isEyedropperActive={isEyedropperActive}
         onToggleEyedropper={() => setIsEyedropperActive(!isEyedropperActive)}
         onOpenLevels={() => setIsLevelsOpen(true)}
+        onOpenResize={() => setIsResizeOpen(true)}
         canvasRef={canvasRef}
       />
       
@@ -228,7 +254,7 @@ function App() {
         
         <div className="sidebar">
           <ChannelPanel 
-            originalImageData={imageState.workingOriginal}
+            imageData={imageState.workingOriginal}
             onChannelsChange={setChannelState}
           />
           <ColorInfo 
@@ -244,6 +270,8 @@ function App() {
         height={imageState.height}
         colorDepth={imageState.colorDepth}
         hasMask={imageState.hasMask}
+        zoomLevel={zoomLevel}
+        onZoomChange={setZoomLevel}
       />
 
       <LevelsTool 
@@ -251,6 +279,15 @@ function App() {
         onApplyLevels={handleApplyLevels}
         isOpen={isLevelsOpen}
         onClose={() => setIsLevelsOpen(false)}
+      />
+
+      <ResizeTool 
+        originalImageData={imageState.workingOriginal}
+        onApplyResize={handleApplyResize}
+        isOpen={isResizeOpen}
+        onClose={() => setIsResizeOpen(false)}
+        currentWidth={imageState.width}
+        currentHeight={imageState.height}
       />
     </div>
   );
