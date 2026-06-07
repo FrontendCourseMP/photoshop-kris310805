@@ -1,73 +1,37 @@
-# React + TypeScript + Vite
+# Технологии компьютерной графики - Лабораторные работы
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Ссылка на хостинг
+https://frontendcoursemp.github.io/photoshop-kris310805
 
-Currently, two official plugins are available:
+## Все лабораторные работы
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Лабораторная работа №1: Цифровое представление изображения
+- Загрузка PNG, JPG, GB7
+- Сохранение в PNG, JPG, GB7
+- Отображение на canvas
+- Статус-бар с размерами и глубиной цвета
 
-## React Compiler
+### Лабораторная работа №2: Цветовые каналы и инструмент «Пипетка»
+- Панель каналов (Red, Green, Blue, Alpha)
+- Инструмент «Пипетка» с RGB и CIELAB
+- Включение/выключение каналов
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Лабораторная работа №3: Градационные преобразования и "Уровни"
+- Инструмент Levels
+- Регулировка черного, гаммы, белого
+- Предпросмотр
 
-## Expanding the ESLint configuration
+### Лабораторная работа №4: Масштабирование изображения
+- Слайдер масштаба 12%-300%
+- Интерполяция (ближайший сосед, билинейная)
+- Изменение размера в процентах/пикселях
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Лабораторная работа №5: Фильтрация изображений
+- Ядра свёртки 3×3
+- Предустановленные фильтры
+- Обработка краёв
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Технологии
+- React 18 + TypeScript
+- Vite
+- Canvas API
