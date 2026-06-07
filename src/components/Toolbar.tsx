@@ -8,6 +8,7 @@ interface ToolbarProps {
   onToggleEyedropper?: () => void;
   onOpenLevels?: () => void;
   onOpenResize?: () => void;
+  onOpenFilter?: () => void;
   canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
@@ -18,6 +19,7 @@ export default function Toolbar({
   onToggleEyedropper,
   onOpenLevels,
   onOpenResize,
+  onOpenFilter,
   canvasRef
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,6 +133,11 @@ export default function Toolbar({
       {onOpenResize && (
         <button onClick={onOpenResize}>
           🔍 Масштабирование
+        </button>
+      )}
+      {onOpenFilter && (
+        <button onClick={onOpenFilter}>
+          🎨 Фильтры
         </button>
       )}
     </div>

@@ -6,6 +6,7 @@ import ChannelPanel, { type ChannelState } from './components/ChannelPanel';
 import ColorInfo from './components/ColorInfo';
 import LevelsTool from './components/LevelsTool';
 import ResizeTool from './components/ResizeTool';
+import FilterTool from './components/FilterTool';
 import { resizeImage } from './utils/imageResize';
 import './App.css';
 
@@ -42,12 +43,12 @@ function App() {
   const [isEyedropperActive, setIsEyedropperActive] = useState(false);
   const [isLevelsOpen, setIsLevelsOpen] = useState(false);
   const [isResizeOpen, setIsResizeOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [colorPickCallback, setColorPickCallback] = useState<((x: number, y: number, color: any) => void) | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Применяем каналы к изображению
   const applyChannels = (imageData: ImageData, channels: ChannelState): ImageData => {
     if (!imageData) return imageData;
     
@@ -74,7 +75,6 @@ function App() {
     return newImageData;
   };
 
-  // Применяем масштаб к изображению для отображения
   const applyZoom = (sourceImage: ImageData, zoom: number): ImageData => {
     if (zoom === 100 || !sourceImage) return sourceImage;
     
@@ -84,13 +84,10 @@ function App() {
     return resizeImage(sourceImage, newWidth, newHeight, 'bilinear');
   };
 
-  // Обновляем canvas при изменении каналов или масштаба
   const updateCanvasDisplay = () => {
     if (!imageState.workingOriginal) return;
     
-    // Сначала применяем каналы
     const withChannels = applyChannels(imageState.workingOriginal, channelState);
-    // Потом применяем масштаб для отображения
     const withZoom = applyZoom(withChannels, zoomLevel);
     
     setImageState(prev => ({ ...prev, imageData: withZoom, displayOriginal: withChannels }));
@@ -110,19 +107,16 @@ function App() {
     updateCanvasDisplay();
   }, [channelState, zoomLevel, imageState.workingOriginal]);
 
-  // Загрузка нового изображения с авто-масштабированием
   const updateCanvasFromImageData = (imgData: ImageData) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    // Сохраняем оригиналы
     const loadedCopy = new ImageData(imgData.width, imgData.height);
     loadedCopy.data.set(imgData.data);
     
     const workingCopy = new ImageData(imgData.width, imgData.height);
     workingCopy.data.set(imgData.data);
     
-    // Автоматический масштаб, чтобы изображение поместилось в canvas
     const container = document.querySelector('.canvas-container');
     const maxWidth = (container?.clientWidth || 800) - 40;
     const maxHeight = 500;
@@ -230,9 +224,22 @@ function App() {
     setZoomLevel(100);
   };
 
+  const handleApplyFilter = (filteredImageData: ImageData) => {
+    const newWorkingCopy = new ImageData(filteredImageData.width, filteredImageData.height);
+    newWorkingCopy.data.set(filteredImageData.data);
+    
+    setImageState(prev => ({
+      ...prev,
+      workingOriginal: newWorkingCopy,
+      displayOriginal: newWorkingCopy,
+      width: filteredImageData.width,
+      height: filteredImageData.height,
+    }));
+  };
+
   return (
     <div className="app">
-      <h1>Технологии компьютерной графики - Лаба №4</h1>
+      <h1>Технологии компьютерной графики - Лаба №5</h1>
       <Toolbar 
         onImageLoaded={updateCanvasFromImageData}
         onGB7Loaded={handleGB7Loaded}
@@ -240,6 +247,7 @@ function App() {
         onToggleEyedropper={() => setIsEyedropperActive(!isEyedropperActive)}
         onOpenLevels={() => setIsLevelsOpen(true)}
         onOpenResize={() => setIsResizeOpen(true)}
+        onOpenFilter={() => setIsFilterOpen(true)}
         canvasRef={canvasRef}
       />
       
@@ -288,6 +296,13 @@ function App() {
         onClose={() => setIsResizeOpen(false)}
         currentWidth={imageState.width}
         currentHeight={imageState.height}
+      />
+
+      <FilterTool 
+        originalImageData={imageState.workingOriginal}
+        onApplyFilter={handleApplyFilter}
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
       />
     </div>
   );
