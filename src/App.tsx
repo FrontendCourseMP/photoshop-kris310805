@@ -32,74 +32,74 @@ function App() {
     displayOriginal: null,
     hasMask: false,
   });
-  
+
   const [channelState, setChannelState] = useState<ChannelState>({
     red: true,
     green: true,
     blue: true,
     alpha: true,
   });
-  
+
   const [isEyedropperActive, setIsEyedropperActive] = useState(false);
   const [isLevelsOpen, setIsLevelsOpen] = useState(false);
   const [isResizeOpen, setIsResizeOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [colorPickCallback, setColorPickCallback] = useState<((x: number, y: number, color: any) => void) | null>(null);
-  
+  const [colorPickCallback, setColorPickCallback] = useState<
+    ((x: number, y: number, color: any) => void) | null
+  >(null);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const applyChannels = (imageData: ImageData, channels: ChannelState): ImageData => {
     if (!imageData) return imageData;
-    
+
     const newImageData = new ImageData(imageData.width, imageData.height);
     const pixels = imageData.data;
-    
+
     for (let i = 0; i < pixels.length; i += 4) {
       let r = pixels[i];
       let g = pixels[i + 1];
       let b = pixels[i + 2];
       let a = pixels[i + 3];
-      
+
       if (!channels.red) r = 0;
       if (!channels.green) g = 0;
       if (!channels.blue) b = 0;
       if (!channels.alpha) a = 255;
-      
+
       newImageData.data[i] = r;
       newImageData.data[i + 1] = g;
       newImageData.data[i + 2] = b;
       newImageData.data[i + 3] = a;
     }
-    
+
     return newImageData;
   };
 
   const applyZoom = (sourceImage: ImageData, zoom: number): ImageData => {
     if (zoom === 100 || !sourceImage) return sourceImage;
-    
+
     const newWidth = Math.round(sourceImage.width * (zoom / 100));
     const newHeight = Math.round(sourceImage.height * (zoom / 100));
-    
+
     return resizeImage(sourceImage, newWidth, newHeight, 'bilinear');
   };
 
   const updateCanvasDisplay = () => {
     if (!imageState.workingOriginal) return;
-    
+
     const withChannels = applyChannels(imageState.workingOriginal, channelState);
     const withZoom = applyZoom(withChannels, zoomLevel);
-    
-    setImageState(prev => ({ ...prev, imageData: withZoom, displayOriginal: withChannels }));
-    
+
+    setImageState((prev) => ({ ...prev, imageData: withZoom, displayOriginal: withChannels }));
+
     const canvas = canvasRef.current;
     if (canvas && withZoom) {
       canvas.width = withZoom.width;
       canvas.height = withZoom.height;
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.putImageData(withZoom, 0, 0);
-      }
+      if (ctx) ctx.putImageData(withZoom, 0, 0);
     }
   };
 
@@ -110,27 +110,28 @@ function App() {
   const updateCanvasFromImageData = (imgData: ImageData) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const loadedCopy = new ImageData(imgData.width, imgData.height);
     loadedCopy.data.set(imgData.data);
-    
+
     const workingCopy = new ImageData(imgData.width, imgData.height);
     workingCopy.data.set(imgData.data);
-    
+
+    // Авто-масштаб, чтобы картинка поместилась
     const container = document.querySelector('.canvas-container');
     const maxWidth = (container?.clientWidth || 800) - 40;
-    const maxHeight = 500;
+    const maxHeight = (container?.clientHeight || 500) - 40;
     let autoZoom = 100;
-    
+
     if (imgData.width > maxWidth || imgData.height > maxHeight) {
       const scaleX = maxWidth / imgData.width;
       const scaleY = maxHeight / imgData.height;
       autoZoom = Math.min(scaleX, scaleY) * 100;
       autoZoom = Math.min(300, Math.max(12, Math.round(autoZoom)));
     }
-    
+
     setZoomLevel(autoZoom);
-    
+
     setImageState({
       width: imgData.width,
       height: imgData.height,
@@ -141,35 +142,35 @@ function App() {
       displayOriginal: workingCopy,
       hasMask: false,
     });
-    
+
     setChannelState({ red: true, green: true, blue: true, alpha: true });
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isEyedropperActive || !colorPickCallback || !imageState.displayOriginal) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const rect = canvas.getBoundingClientRect();
-    const scaleX = imageState.displayOriginal!.width / rect.width;
-    const scaleY = imageState.displayOriginal!.height / rect.height;
-    
+    const scaleX = imageState.displayOriginal.width / rect.width;
+    const scaleY = imageState.displayOriginal.height / rect.height;
+
     let mouseX = (e.clientX - rect.left) * scaleX;
     let mouseY = (e.clientY - rect.top) * scaleY;
-    
-    mouseX = Math.max(0, Math.min(mouseX, imageState.displayOriginal!.width - 1));
-    mouseY = Math.max(0, Math.min(mouseY, imageState.displayOriginal!.height - 1));
-    
+
+    mouseX = Math.max(0, Math.min(mouseX, imageState.displayOriginal.width - 1));
+    mouseY = Math.max(0, Math.min(mouseY, imageState.displayOriginal.height - 1));
+
     const x = Math.floor(mouseX);
     const y = Math.floor(mouseY);
-    
-    const idx = (y * imageState.displayOriginal!.width + x) * 4;
+
+    const idx = (y * imageState.displayOriginal.width + x) * 4;
     const color = {
-      r: imageState.displayOriginal!.data[idx],
-      g: imageState.displayOriginal!.data[idx + 1],
-      b: imageState.displayOriginal!.data[idx + 2],
-      a: imageState.displayOriginal!.data[idx + 3],
+      r: imageState.displayOriginal.data[idx],
+      g: imageState.displayOriginal.data[idx + 1],
+      b: imageState.displayOriginal.data[idx + 2],
+      a: imageState.displayOriginal.data[idx + 3],
     };
     colorPickCallback(x, y, color);
   };
@@ -177,10 +178,23 @@ function App() {
   const handleGB7Loaded = (imgData: ImageData, bitsPerPixel: number, hasMask: boolean) => {
     const loadedCopy = new ImageData(imgData.width, imgData.height);
     loadedCopy.data.set(imgData.data);
-    
+
     const workingCopy = new ImageData(imgData.width, imgData.height);
     workingCopy.data.set(imgData.data);
-    
+
+    // Авто-масштаб для GB7 тоже
+    const container = document.querySelector('.canvas-container');
+    const maxWidth = (container?.clientWidth || 800) - 40;
+    const maxHeight = (container?.clientHeight || 500) - 40;
+    let autoZoom = 100;
+
+    if (imgData.width > maxWidth || imgData.height > maxHeight) {
+      const scaleX = maxWidth / imgData.width;
+      const scaleY = maxHeight / imgData.height;
+      autoZoom = Math.min(scaleX, scaleY) * 100;
+      autoZoom = Math.min(300, Math.max(12, Math.round(autoZoom)));
+    }
+
     setImageState({
       width: imgData.width,
       height: imgData.height,
@@ -192,14 +206,14 @@ function App() {
       hasMask: hasMask,
     });
     setChannelState({ red: true, green: true, blue: true, alpha: true });
-    setZoomLevel(100);
+    setZoomLevel(autoZoom);
   };
 
   const handleApplyLevels = (adjustedImageData: ImageData) => {
     const newWorkingCopy = new ImageData(adjustedImageData.width, adjustedImageData.height);
     newWorkingCopy.data.set(adjustedImageData.data);
-    
-    setImageState(prev => ({
+
+    setImageState((prev) => ({
       ...prev,
       workingOriginal: newWorkingCopy,
       displayOriginal: newWorkingCopy,
@@ -211,8 +225,8 @@ function App() {
   const handleApplyResize = (resizedImageData: ImageData) => {
     const newWorkingCopy = new ImageData(resizedImageData.width, resizedImageData.height);
     newWorkingCopy.data.set(resizedImageData.data);
-    
-    setImageState(prev => ({
+
+    setImageState((prev) => ({
       ...prev,
       workingOriginal: newWorkingCopy,
       displayOriginal: newWorkingCopy,
@@ -220,15 +234,15 @@ function App() {
       height: resizedImageData.height,
       loadedOriginal: newWorkingCopy,
     }));
-    
+
     setZoomLevel(100);
   };
 
   const handleApplyFilter = (filteredImageData: ImageData) => {
     const newWorkingCopy = new ImageData(filteredImageData.width, filteredImageData.height);
     newWorkingCopy.data.set(filteredImageData.data);
-    
-    setImageState(prev => ({
+
+    setImageState((prev) => ({
       ...prev,
       workingOriginal: newWorkingCopy,
       displayOriginal: newWorkingCopy,
@@ -239,8 +253,8 @@ function App() {
 
   return (
     <div className="app">
-      <h1>Технологии компьютерной графики - Лаба №5</h1>
-      <Toolbar 
+      <h1>Технологии компьютерной графики</h1>
+      <Toolbar
         onImageLoaded={updateCanvasFromImageData}
         onGB7Loaded={handleGB7Loaded}
         isEyedropperActive={isEyedropperActive}
@@ -250,30 +264,31 @@ function App() {
         onOpenFilter={() => setIsFilterOpen(true)}
         canvasRef={canvasRef}
       />
-      
+
       <div className="main-content">
         <div className="canvas-section">
-          <CanvasArea 
-            canvasRef={canvasRef} 
+          <CanvasArea
+            canvasRef={canvasRef}
             onClick={handleCanvasClick}
             isEyedropperActive={isEyedropperActive}
           />
         </div>
-        
+
         <div className="sidebar">
-          <ChannelPanel 
+          <ChannelPanel
             imageData={imageState.workingOriginal}
+            colorDepth={imageState.colorDepth}
             onChannelsChange={setChannelState}
           />
-          <ColorInfo 
+          <ColorInfo
             onPickColor={(callback) => setColorPickCallback(() => callback)}
             isActive={isEyedropperActive}
             onActivate={setIsEyedropperActive}
           />
         </div>
       </div>
-      
-      <StatusBar 
+
+      <StatusBar
         width={imageState.width}
         height={imageState.height}
         colorDepth={imageState.colorDepth}
@@ -282,14 +297,14 @@ function App() {
         onZoomChange={setZoomLevel}
       />
 
-      <LevelsTool 
+      <LevelsTool
         originalImageData={imageState.workingOriginal}
         onApplyLevels={handleApplyLevels}
         isOpen={isLevelsOpen}
         onClose={() => setIsLevelsOpen(false)}
       />
 
-      <ResizeTool 
+      <ResizeTool
         originalImageData={imageState.workingOriginal}
         onApplyResize={handleApplyResize}
         isOpen={isResizeOpen}
@@ -298,7 +313,7 @@ function App() {
         currentHeight={imageState.height}
       />
 
-      <FilterTool 
+      <FilterTool
         originalImageData={imageState.workingOriginal}
         onApplyFilter={handleApplyFilter}
         isOpen={isFilterOpen}

@@ -169,6 +169,25 @@ body {
   gap: 10px;
 }
 
+.channels-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.channel-info {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 10px;
+  font-family: 'Courier New', monospace;
+}
+
+.channel-placeholder {
+  font-size: 13px;
+  color: #999;
+  text-align: center;
+  padding: 15px;
+  font-style: italic;
+}
+
 .channel-item {
   text-align: center;
   padding: 8px;
@@ -176,6 +195,11 @@ body {
   border-radius: 10px;
   transition: all 0.3s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
 }
 
 .channel-item:hover {
@@ -183,16 +207,19 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* Пропорции сохраняются автоматически, размер ограничен */
 .channel-item img {
-  width: 100%;
-  max-width: 65px;
-  height: 65px;
-  object-fit: cover;
+  max-width: 70px;
+  max-height: 70px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   border-radius: 6px;
   margin-bottom: 6px;
   border: 2px solid #ddd;
   transition: all 0.3s ease;
   background: #fff;
+  display: block;
 }
 
 .channel-item label {
