@@ -134,7 +134,7 @@ function App() {
     setImageState({
       width: imgData.width,
       height: imgData.height,
-      colorDepth: 24,
+      colorDepth: (imgData as any).__colorDepth || 24,
       imageData: imgData,
       loadedOriginal: loadedCopy,
       workingOriginal: workingCopy,

@@ -12,6 +12,15 @@ interface ToolbarProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
+// Определяем, есть ли прозрачные пиксели (значит RGBA = 32 бита)
+function checkHasAlpha(imageData: ImageData): boolean {
+  const data = imageData.data;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 255) return true;
+  }
+  return false;
+}
+
 export default function Toolbar({ 
   onImageLoaded, 
   onGB7Loaded, 
@@ -41,7 +50,14 @@ export default function Toolbar({
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0);
           const imageData = ctx?.getImageData(0, 0, img.width, img.height);
-          if (imageData) onImageLoaded(imageData);
+          if (imageData) {
+            // Определяем глубину цвета по наличию прозрачности
+            const hasAlpha = checkHasAlpha(imageData);
+            const colorDepth = hasAlpha ? 32 : 24;
+            // Сохраняем глубину в самом объекте ImageData
+            (imageData as any).__colorDepth = colorDepth;
+            onImageLoaded(imageData);
+          }
         };
         img.src = result;
       } else if (result instanceof ArrayBuffer) {

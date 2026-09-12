@@ -4,52 +4,61 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .app {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 15px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Заголовок */
 .app h1 {
   text-align: center;
   color: white;
-  margin-bottom: 30px;
-  font-size: 2.5rem;
+  margin-bottom: 12px;
+  font-size: 1.6rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
   font-weight: 600;
   letter-spacing: -0.5px;
+  flex-shrink: 0;
 }
 
 /* Панель инструментов */
 .toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 25px;
+  gap: 8px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .toolbar button {
-  padding: 10px 20px;
+  padding: 8px 14px;
   cursor: pointer;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 25px;
-  font-size: 14px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 500;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .toolbar button:hover {
@@ -71,118 +80,135 @@ body {
 /* Основной контент */
 .main-content {
   display: flex;
-  gap: 25px;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
+  gap: 15px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .canvas-section {
-  flex: 3;
-  min-width: 300px;
+  flex: 1;
+  min-width: 0;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border-radius: 16px;
   backdrop-filter: blur(10px);
-  padding: 20px;
+  padding: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .canvas-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  flex: 1;
+  min-height: 0;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: auto;
+  padding: 8px;
 }
 
+/* Canvas: без скруглений, чёткий, pixelated */
 .canvas-container canvas {
   max-width: 100%;
+  max-height: 100%;
   height: auto;
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   background: white;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  display: block;
 }
 
 /* Боковая панель */
 .sidebar {
-  flex: 1;
-  min-width: 280px;
+  flex: 0 0 300px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
 }
 
 /* Панель каналов */
 .channel-panel {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
 }
 
 .channel-panel h3 {
   color: #333;
-  margin-bottom: 15px;
-  font-size: 1.2rem;
+  margin-bottom: 10px;
+  font-size: 1rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .channel-panel h3::before {
   content: '🎨';
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 .channels-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  gap: 10px;
 }
 
 .channel-item {
   text-align: center;
-  padding: 10px;
+  padding: 8px;
   background: #f8f9fa;
-  border-radius: 12px;
+  border-radius: 10px;
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .channel-item:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .channel-item img {
   width: 100%;
-  max-width: 80px;
-  height: auto;
-  border-radius: 8px;
-  margin-bottom: 8px;
+  max-width: 65px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 6px;
   border: 2px solid #ddd;
   transition: all 0.3s ease;
+  background: #fff;
 }
 
 .channel-item label {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 500;
   color: #555;
   cursor: pointer;
 }
 
 .channel-item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
   accent-color: #667eea;
 }
@@ -190,42 +216,45 @@ body {
 /* Информация о цвете */
 .color-info {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .color-info-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .color-info-header h3 {
   color: #333;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  margin: 0;
 }
 
 .color-info-header h3::before {
-  content: '🎨';
-  font-size: 1.3rem;
+  content: '🎯';
+  font-size: 1.1rem;
 }
 
 .color-info-header button {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 20px;
+  border-radius: 16px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 12px;
   transition: all 0.3s ease;
 }
 
@@ -236,37 +265,41 @@ body {
 
 .color-details {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
   background: #f8f9fa;
-  padding: 15px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 10px;
 }
 
 .color-preview {
-  width: 70px;
-  height: 70px;
-  border-radius: 12px;
+  width: 55px;
+  height: 55px;
+  border-radius: 10px;
   border: 3px solid white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .color-values {
   flex: 1;
+  min-width: 0;
 }
 
 .color-values p {
-  margin: 5px 0;
-  font-size: 13px;
+  margin: 3px 0;
+  font-size: 12px;
   font-family: 'Courier New', monospace;
   color: #333;
+  word-break: break-word;
 }
 
 .color-placeholder {
   text-align: center;
   color: #999;
-  padding: 20px;
+  padding: 15px;
   font-style: italic;
+  font-size: 13px;
 }
 
 /* Статус бар */
@@ -274,111 +307,174 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 10px 18px;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
   color: white;
   border-radius: 50px;
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 12px;
   flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 12px;
+  flex-shrink: 0;
 }
 
 .status-bar span {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .zoom-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: rgba(255, 255, 255, 0.1);
-  padding: 5px 15px;
+  padding: 4px 12px;
   border-radius: 30px;
 }
 
 .zoom-control input {
-  width: 150px;
+  width: 120px;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  outline: none;
 }
 
-/* Диалоговые окна */
+.zoom-control input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ============ ДИАЛОГОВЫЕ ОКНА ============ */
 .levels-dialog,
 .resize-dialog,
 .filter-dialog {
   border: none;
-  border-radius: 24px;
+  border-radius: 20px;
   padding: 0;
-  max-width: 500px;
+  max-width: 520px;
   width: 90%;
   background: white;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   animation: slideIn 0.3s ease;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  z-index: 9999;
+}
+
+.levels-dialog:not([open]),
+.resize-dialog:not([open]),
+.filter-dialog:not([open]) {
+  display: none;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-50px);
+    transform: translate(-50%, -60%);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, -50%);
   }
 }
 
+/* Backdrop НЕ должен перекрывать сам диалог */
 .levels-dialog::backdrop,
 .resize-dialog::backdrop,
 .filter-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
 }
 
 .levels-content,
 .resize-content,
 .filter-content {
-  padding: 25px;
+  padding: 22px;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .levels-content h2,
 .resize-content h2,
 .filter-content h2 {
   margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.5rem;
+  margin-bottom: 16px;
+  font-size: 1.3rem;
   color: #333;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+/* ============ ЛАБА 3: Уровни ============ */
+.levels-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.levels-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.levels-controls select {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  background: white;
 }
 
 /* Слайдеры */
 .slider-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .slider-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: #555;
   font-weight: 500;
+  font-size: 13px;
 }
 
-.slider-group input {
+.slider-group input[type="range"] {
   width: 100%;
   height: 6px;
   border-radius: 3px;
   background: #ddd;
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
 }
 
-.slider-group input::-webkit-slider-thumb {
+.slider-group input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -387,24 +483,25 @@ body {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* Кнопки в диалогах */
+/* ============ Кнопки в диалогах ============ */
 .levels-buttons,
 .resize-buttons,
 .filter-buttons {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-end;
-  margin-top: 25px;
+  margin-top: 20px;
 }
 
 .levels-buttons button,
 .resize-buttons button,
 .filter-buttons button {
-  padding: 10px 24px;
+  padding: 9px 20px;
   border: none;
-  border-radius: 25px;
+  border-radius: 22px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 13px;
   transition: all 0.3s ease;
 }
 
@@ -450,28 +547,149 @@ body {
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
 }
 
-/* Сетка ядра для фильтров */
+/* ============ ЛАБА 4: Resize ============ */
+.resize-info {
+  background: #f0f0f0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.resize-info p {
+  margin: 3px 0;
+  font-family: 'Courier New', monospace;
+}
+
+.resize-unit-selector {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 16px;
+}
+
+.resize-unit-selector label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.resize-inputs {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 16px;
+}
+
+.input-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.input-group label {
+  min-width: 45px;
+}
+
+.input-group input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+}
+
+.resize-aspect,
+.resize-method {
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.resize-aspect label,
+.resize-method label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.resize-method select {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: white;
+  font-size: 13px;
+}
+
+/* ============ ЛАБА 5: Фильтры ============ */
+.filter-preview-check {
+  margin-bottom: 16px;
+}
+
+.filter-preview-check label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.filter-preset {
+  margin-bottom: 16px;
+}
+
+.filter-preset label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.filter-preset select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+}
+
+.filter-kernel {
+  margin-bottom: 16px;
+}
+
+.filter-kernel label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 13px;
+}
+
 .kernel-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  margin: 15px 0;
+  margin: 12px 0;
 }
 
 .kernel-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
 }
 
 .kernel-row input {
-  width: 70px;
-  padding: 10px;
+  width: 65px;
+  padding: 8px;
   text-align: center;
   border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-size: 13px;
   transition: all 0.3s ease;
 }
 
@@ -481,59 +699,52 @@ body {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-/* Адаптивность */
-@media (max-width: 768px) {
-  .app {
-    padding: 15px;
-  }
-  
-  .app h1 {
-    font-size: 1.5rem;
-  }
-  
-  .main-content {
-    flex-direction: column;
-  }
-  
-  .toolbar button {
-    padding: 8px 16px;
-    font-size: 12px;
-  }
-  
-  .status-bar {
-    flex-direction: column;
-    align-items: stretch;
-    border-radius: 20px;
-  }
-  
-  .zoom-control {
-    justify-content: center;
-  }
-  
-  .channels-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  .kernel-row input {
-    width: 50px;
-    padding: 8px;
-  }
+.filter-options {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-/* Стили для тултипов */
+.filter-edge,
+.filter-channel {
+  flex: 1;
+  min-width: 150px;
+}
+
+.filter-edge label,
+.filter-channel label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.filter-edge select,
+.filter-channel select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+}
+
+/* ============ Тултип ============ */
 .tooltip-trigger {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: 11px;
   cursor: help;
-  margin-left: 10px;
+  margin-left: 8px;
+  flex-shrink: 0;
 }
 
 .tooltip-text {
@@ -546,10 +757,13 @@ body {
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 12px;
-  white-space: nowrap;
-  z-index: 1000;
+  white-space: normal;
+  max-width: 240px;
+  z-index: 10000;
   margin-bottom: 8px;
   font-weight: normal;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .tooltip-text::after {
@@ -563,14 +777,14 @@ body {
   border-color: #333 transparent transparent transparent;
 }
 
-/* Полоса прокрутки */
+/* ============ Полоса прокрутки ============ */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
 
@@ -581,4 +795,60 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* ============ Адаптивность ============ */
+@media (max-width: 900px) {
+  .app h1 {
+    font-size: 1.3rem;
+  }
+
+  .sidebar {
+    flex: 0 0 260px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 10px;
+  }
+
+  .app h1 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+
+  .toolbar button {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .main-content {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    flex: 0 0 auto;
+    max-height: 40vh;
+  }
+
+  .status-bar {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 16px;
+    font-size: 11px;
+  }
+
+  .zoom-control {
+    justify-content: space-between;
+  }
+
+  .channels-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .kernel-row input {
+    width: 50px;
+    padding: 6px;
+  }
 }
