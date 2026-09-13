@@ -3,11 +3,12 @@ import { type InterpolationMethod, resizeImage } from '../utils/imageResize';
 
 interface ResizeToolProps {
   originalImageData: ImageData | null;
-  onApplyResize: (resizedImageData: ImageData) => void;
+  onApplyResize: (resizedImageData: ImageData, method: InterpolationMethod) => void;
   isOpen: boolean;
   onClose: () => void;
   currentWidth: number;
   currentHeight: number;
+  currentMethod: InterpolationMethod;
 }
 
 type UnitType = 'percent' | 'pixels';
@@ -19,36 +20,38 @@ export default function ResizeTool({
   onClose,
   currentWidth,
   currentHeight,
+  currentMethod,
 }: ResizeToolProps) {
   const [unit, setUnit] = useState<UnitType>('percent');
   const [width, setWidth] = useState<number>(100);
   const [height, setHeight] = useState<number>(100);
   const [keepAspectRatio, setKeepAspectRatio] = useState(true);
-  const [method, setMethod] = useState<InterpolationMethod>('bilinear');
+  const [method, setMethod] = useState<InterpolationMethod>(currentMethod);
   const [showTooltip, setShowTooltip] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  
+
   const aspectRatio = currentWidth / currentHeight;
 
+  // Открытие/сброс
   useEffect(() => {
     if (isOpen && dialogRef.current) {
       dialogRef.current.showModal();
       setWidth(100);
       setHeight(100);
       setUnit('percent');
-      setMethod('bilinear');
+      setMethod(currentMethod);
       setKeepAspectRatio(true);
     } else if (!isOpen && dialogRef.current) {
       dialogRef.current.close();
     }
-  }, [isOpen, currentWidth, currentHeight]);
+  }, [isOpen, currentWidth, currentHeight, currentMethod]);
 
   const handleWidthChange = (newWidth: number) => {
     if (unit === 'percent') {
       const percent = Math.min(300, Math.max(12, newWidth));
       setWidth(percent);
       if (keepAspectRatio) {
-        setHeight(Math.min(300, Math.max(12, percent)));
+        setHeight(percent);
       }
     } else {
       const maxDim = Math.max(currentWidth, currentHeight) * 3;
@@ -67,7 +70,7 @@ export default function ResizeTool({
       const percent = Math.min(300, Math.max(12, newHeight));
       setHeight(percent);
       if (keepAspectRatio) {
-        setWidth(Math.min(300, Math.max(12, percent)));
+        setWidth(percent);
       }
     } else {
       const maxDim = Math.max(currentWidth, currentHeight) * 3;
@@ -83,14 +86,15 @@ export default function ResizeTool({
 
   const getActualDimensions = (): { width: number; height: number } => {
     if (unit === 'percent') {
-      const percentW = width / 100;
-      const percentH = height / 100;
       return {
-        width: Math.round(currentWidth * percentW),
-        height: Math.round(currentHeight * percentH),
+        width: Math.max(1, Math.round(currentWidth * (width / 100))),
+        height: Math.max(1, Math.round(currentHeight * (height / 100))),
       };
     }
-    return { width, height };
+    return {
+      width: Math.max(1, Math.round(width)),
+      height: Math.max(1, Math.round(height)),
+    };
   };
 
   const getPixelCount = (w: number, h: number): string => {
@@ -103,7 +107,7 @@ export default function ResizeTool({
 
   const handleApply = () => {
     if (!originalImageData) return;
-    
+
     const dimensions = getActualDimensions();
     const resized = resizeImage(
       originalImageData,
@@ -111,15 +115,19 @@ export default function ResizeTool({
       dimensions.height,
       method
     );
-    onApplyResize(resized);
+    onApplyResize(resized, method);
+    onClose();
+  };
+
+  const handleCancel = () => {
     onClose();
   };
 
   const getTooltipText = (): string => {
     if (method === 'nearest') {
-      return 'Метод ближайшего соседа: быстрый, но может давать пикселизацию. Подходит для увеличения пиксель-арта.';
+      return 'Метод ближайшего соседа: берёт значение ближайшего пикселя. Быстрый, но даёт пикселизацию. Идеален для пиксель-арта и резких границ.';
     }
-    return 'Билинейная интерполяция: более плавное масштабирование, учитывает 4 соседних пикселя. Рекомендуется для фотографий.';
+    return 'Билинейная интерполяция: усредняет 4 соседних пикселя. Плавные переходы, подходит для фотографий.';
   };
 
   if (!originalImageData) return null;
@@ -131,11 +139,15 @@ export default function ResizeTool({
   return (
     <dialog ref={dialogRef} className="resize-dialog">
       <div className="resize-content">
-        <h2>Масштабирование изображения</h2>
-        
+        <h2>🔍 Масштабирование изображения</h2>
+
         <div className="resize-info">
-          <p>Исходный размер: {currentWidth} × {currentHeight} ({originalPixels})</p>
-          <p>Новый размер: {dimensions.width} × {dimensions.height} ({newPixels})</p>
+          <p>
+            <strong>Исходный:</strong> {currentWidth} × {currentHeight} ({originalPixels})
+          </p>
+          <p>
+            <strong>Новый:</strong> {dimensions.width} × {dimensions.height} ({newPixels})
+          </p>
         </div>
 
         <div className="resize-unit-selector">
@@ -144,21 +156,21 @@ export default function ResizeTool({
               type="radio"
               value="percent"
               checked={unit === 'percent'}
-              onChange={(e) => {
-                setUnit(e.target.value as UnitType);
+              onChange={() => {
+                setUnit('percent');
                 setWidth(100);
                 setHeight(100);
               }}
             />
-            Проценты (12% - 300%)
+            Проценты (12% – 300%)
           </label>
           <label>
             <input
               type="radio"
               value="pixels"
               checked={unit === 'pixels'}
-              onChange={(e) => {
-                setUnit(e.target.value as UnitType);
+              onChange={() => {
+                setUnit('pixels');
                 setWidth(currentWidth);
                 setHeight(currentHeight);
               }}
@@ -176,11 +188,10 @@ export default function ResizeTool({
               onChange={(e) => handleWidthChange(parseInt(e.target.value) || 0)}
               min={unit === 'percent' ? 12 : 1}
               max={unit === 'percent' ? 300 : Math.max(currentWidth, currentHeight) * 3}
-              step={1}
             />
             <span>{unit === 'percent' ? '%' : 'px'}</span>
           </div>
-          
+
           <div className="input-group">
             <label>Высота:</label>
             <input
@@ -189,7 +200,6 @@ export default function ResizeTool({
               onChange={(e) => handleHeightChange(parseInt(e.target.value) || 0)}
               min={unit === 'percent' ? 12 : 1}
               max={unit === 'percent' ? 300 : Math.max(currentWidth, currentHeight) * 3}
-              step={1}
             />
             <span>{unit === 'percent' ? '%' : 'px'}</span>
           </div>
@@ -209,7 +219,10 @@ export default function ResizeTool({
         <div className="resize-method">
           <label>
             Метод интерполяции:
-            <select value={method} onChange={(e) => setMethod(e.target.value as InterpolationMethod)}>
+            <select
+              value={method}
+              onChange={(e) => setMethod(e.target.value as InterpolationMethod)}
+            >
               <option value="bilinear">Билинейная интерполяция</option>
               <option value="nearest">Ближайший сосед</option>
             </select>
@@ -225,7 +238,7 @@ export default function ResizeTool({
         </div>
 
         <div className="resize-buttons">
-          <button onClick={onClose}>Отмена</button>
+          <button onClick={handleCancel}>Отмена</button>
           <button onClick={handleApply}>Применить</button>
         </div>
       </div>

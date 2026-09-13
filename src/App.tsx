@@ -7,7 +7,7 @@ import ColorInfo from './components/ColorInfo';
 import LevelsTool from './components/LevelsTool';
 import ResizeTool from './components/ResizeTool';
 import FilterTool from './components/FilterTool';
-import { resizeImage } from './utils/imageResize';
+import { resizeImage, type InterpolationMethod } from './utils/imageResize';
 import './App.css';
 
 interface ImageDataState {
@@ -45,6 +45,7 @@ function App() {
   const [isResizeOpen, setIsResizeOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [interpolationMethod, setInterpolationMethod] = useState<InterpolationMethod>('bilinear');
   const [colorPickCallback, setColorPickCallback] = useState<
     ((x: number, y: number, color: any) => void) | null
   >(null);
@@ -77,13 +78,14 @@ function App() {
     return newImageData;
   };
 
+  // Применяем зум с выбранным методом интерполяции
   const applyZoom = (sourceImage: ImageData, zoom: number): ImageData => {
     if (zoom === 100 || !sourceImage) return sourceImage;
 
-    const newWidth = Math.round(sourceImage.width * (zoom / 100));
-    const newHeight = Math.round(sourceImage.height * (zoom / 100));
+    const newWidth = Math.max(1, Math.round(sourceImage.width * (zoom / 100)));
+    const newHeight = Math.max(1, Math.round(sourceImage.height * (zoom / 100)));
 
-    return resizeImage(sourceImage, newWidth, newHeight, 'bilinear');
+    return resizeImage(sourceImage, newWidth, newHeight, interpolationMethod);
   };
 
   const updateCanvasDisplay = () => {
@@ -105,7 +107,26 @@ function App() {
 
   useEffect(() => {
     updateCanvasDisplay();
-  }, [channelState, zoomLevel, imageState.workingOriginal]);
+  }, [channelState, zoomLevel, imageState.workingOriginal, interpolationMethod]);
+
+  // Расчёт авто-масштаба: изображение должно поместиться в canvas с отступами 50px
+  const calculateAutoZoom = (imgWidth: number, imgHeight: number): number => {
+    // Используем размеры окна как ориентир
+    const maxW = Math.max(window.innerWidth - 450, 300); // 450 = sidebar + padding
+    const maxH = Math.max(window.innerHeight - 280, 200); // 280 = toolbar + statusbar + h1
+
+    let zoom = 100;
+
+    if (imgWidth > maxW || imgHeight > maxH) {
+      const scaleX = maxW / imgWidth;
+      const scaleY = maxH / imgHeight;
+      zoom = Math.min(scaleX, scaleY) * 100;
+    }
+
+    // Ограничения диапазона
+    zoom = Math.max(12, Math.min(300, Math.round(zoom)));
+    return zoom;
+  };
 
   const updateCanvasFromImageData = (imgData: ImageData) => {
     const canvas = canvasRef.current;
@@ -117,18 +138,7 @@ function App() {
     const workingCopy = new ImageData(imgData.width, imgData.height);
     workingCopy.data.set(imgData.data);
 
-    // Авто-масштаб, чтобы картинка поместилась
-    const container = document.querySelector('.canvas-container');
-    const maxWidth = (container?.clientWidth || 800) - 40;
-    const maxHeight = (container?.clientHeight || 500) - 40;
-    let autoZoom = 100;
-
-    if (imgData.width > maxWidth || imgData.height > maxHeight) {
-      const scaleX = maxWidth / imgData.width;
-      const scaleY = maxHeight / imgData.height;
-      autoZoom = Math.min(scaleX, scaleY) * 100;
-      autoZoom = Math.min(300, Math.max(12, Math.round(autoZoom)));
-    }
+    const autoZoom = calculateAutoZoom(imgData.width, imgData.height);
 
     setZoomLevel(autoZoom);
 
@@ -182,18 +192,7 @@ function App() {
     const workingCopy = new ImageData(imgData.width, imgData.height);
     workingCopy.data.set(imgData.data);
 
-    // Авто-масштаб для GB7 тоже
-    const container = document.querySelector('.canvas-container');
-    const maxWidth = (container?.clientWidth || 800) - 40;
-    const maxHeight = (container?.clientHeight || 500) - 40;
-    let autoZoom = 100;
-
-    if (imgData.width > maxWidth || imgData.height > maxHeight) {
-      const scaleX = maxWidth / imgData.width;
-      const scaleY = maxHeight / imgData.height;
-      autoZoom = Math.min(scaleX, scaleY) * 100;
-      autoZoom = Math.min(300, Math.max(12, Math.round(autoZoom)));
-    }
+    const autoZoom = calculateAutoZoom(imgData.width, imgData.height);
 
     setImageState({
       width: imgData.width,
@@ -222,9 +221,14 @@ function App() {
     }));
   };
 
-  const handleApplyResize = (resizedImageData: ImageData) => {
+  const handleApplyResize = (resizedImageData: ImageData, method: InterpolationMethod) => {
     const newWorkingCopy = new ImageData(resizedImageData.width, resizedImageData.height);
     newWorkingCopy.data.set(resizedImageData.data);
+
+    // Запоминаем метод, чтобы он применялся и в дальнейшем
+    setInterpolationMethod(method);
+
+    const autoZoom = calculateAutoZoom(resizedImageData.width, resizedImageData.height);
 
     setImageState((prev) => ({
       ...prev,
@@ -235,7 +239,7 @@ function App() {
       loadedOriginal: newWorkingCopy,
     }));
 
-    setZoomLevel(100);
+    setZoomLevel(autoZoom);
   };
 
   const handleApplyFilter = (filteredImageData: ImageData) => {
@@ -311,6 +315,7 @@ function App() {
         onClose={() => setIsResizeOpen(false)}
         currentWidth={imageState.width}
         currentHeight={imageState.height}
+        currentMethod={interpolationMethod}
       />
 
       <FilterTool

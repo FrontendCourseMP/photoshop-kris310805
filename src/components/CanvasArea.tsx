@@ -9,16 +9,16 @@ interface CanvasAreaProps {
 export default function CanvasArea({ canvasRef, onClick, isEyedropperActive = false }: CanvasAreaProps) {
   return (
     <div className="canvas-container">
-      <canvas 
-        ref={canvasRef} 
+      <canvas
+        ref={canvasRef}
         onClick={onClick}
-        style={{ 
-          maxWidth: '100%', 
-          height: 'auto', 
-          border: '1px solid #ccc',
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          height: 'auto',
           display: 'block',
-          cursor: isEyedropperActive ? 'crosshair' : 'default'
-        }} 
+          cursor: isEyedropperActive ? 'crosshair' : 'default',
+        }}
       />
     </div>
   );
