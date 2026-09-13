@@ -318,12 +318,13 @@ function App() {
         currentMethod={interpolationMethod}
       />
 
-      <FilterTool
-        originalImageData={imageState.workingOriginal}
-        onApplyFilter={handleApplyFilter}
-        isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
-      />
+    <FilterTool
+      originalImageData={imageState.workingOriginal}
+      onApplyFilter={handleApplyFilter}
+      isOpen={isFilterOpen}
+      onClose={() => setIsFilterOpen(false)}
+      colorDepth={imageState.colorDepth}
+    />
     </div>
   );
 }

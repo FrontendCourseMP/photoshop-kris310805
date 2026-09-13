@@ -1,14 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { kernels, applyFilter, type EdgeHandling } from '../utils/imageFilters';
+import { kernels, applyFilter, applyFilterAsync, type EdgeHandling } from '../utils/imageFilters';
 
 interface FilterToolProps {
   originalImageData: ImageData | null;
   onApplyFilter: (filteredImageData: ImageData) => void;
   isOpen: boolean;
   onClose: () => void;
+  colorDepth: number;
 }
 
-type KernelPreset = 'identity' | 'sharpen' | 'gaussian' | 'boxBlur' | 'prewittX' | 'prewittY';
+type KernelPreset =
+  | 'identity'
+  | 'sharpen'
+  | 'gaussian'
+  | 'boxBlur'
+  | 'prewittX'
+  | 'prewittY'
+  | 'custom';
+
 type TargetChannel = 'all' | 'red' | 'green' | 'blue' | 'alpha';
 
 export default function FilterTool({
@@ -16,36 +25,30 @@ export default function FilterTool({
   onApplyFilter,
   isOpen,
   onClose,
+  colorDepth,
 }: FilterToolProps) {
   const [selectedPreset, setSelectedPreset] = useState<KernelPreset>('identity');
-  const [kernelValues, setKernelValues] = useState<number[][]>(() => 
+  const [kernelValues, setKernelValues] = useState<number[][]>(() =>
     JSON.parse(JSON.stringify(kernels.identity))
   );
   const [edgeHandling, setEdgeHandling] = useState<EdgeHandling>('copy');
   const [targetChannel, setTargetChannel] = useState<TargetChannel>('all');
   const [previewEnabled, setPreviewEnabled] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  // Загрузка предустановленного ядра
-  useEffect(() => {
-    const newKernel = JSON.parse(JSON.stringify(kernels[selectedPreset]));
-    setKernelValues(newKernel);
-  }, [selectedPreset]);
+  // Определяем доступные каналы
+  const hasAlpha = colorDepth === 32 || colorDepth === 16;
+  const isGrayscale = colorDepth === 8 || colorDepth === 16;
 
-  // Применение фильтра для предпросмотра
-  useEffect(() => {
-    if (!originalImageData || !isOpen || !previewEnabled) return;
-    
-    const filtered = applyFilter(originalImageData, kernelValues, edgeHandling, targetChannel);
-    onApplyFilter(filtered);
-  }, [kernelValues, edgeHandling, targetChannel, previewEnabled, originalImageData, isOpen, onApplyFilter]);
-
+  // Открытие/сброс
   useEffect(() => {
     if (isOpen && dialogRef.current) {
       dialogRef.current.showModal();
       setSelectedPreset('identity');
       setKernelValues(JSON.parse(JSON.stringify(kernels.identity)));
       setEdgeHandling('copy');
+      // Для grayscale ставим 'all', но помним, что это один канал
       setTargetChannel('all');
       setPreviewEnabled(true);
     } else if (!isOpen && dialogRef.current) {
@@ -53,12 +56,71 @@ export default function FilterTool({
     }
   }, [isOpen]);
 
+  // Применение preset
+  const applyPreset = (preset: KernelPreset) => {
+    setSelectedPreset(preset);
+    if (preset !== 'custom') {
+      setKernelValues(JSON.parse(JSON.stringify(kernels[preset])));
+    }
+  };
+
+  // Ручное изменение ядра → preset становится "custom"
   const updateKernelValue = (row: number, col: number, val: number) => {
-    const newKernel = [...kernelValues];
+    const newKernel = kernelValues.map((r) => [...r]);
     newKernel[row][col] = parseFloat(val.toFixed(2));
     setKernelValues(newKernel);
-    setSelectedPreset('identity');
+    setSelectedPreset('custom');
   };
+
+  // Предпросмотр — асинхронно для больших изображений
+  useEffect(() => {
+    if (!originalImageData || !isOpen || !previewEnabled) return;
+
+    let cancelled = false;
+    setIsProcessing(true);
+
+    // Определяем целевой канал правильно
+    const effectiveTarget = isGrayscale
+      ? ('all' as const) // для grayscale — обрабатываем все (это один канал)
+      : targetChannel === 'alpha' && !hasAlpha
+      ? 'all'
+      : targetChannel;
+
+    const run = async () => {
+      try {
+        const filtered = await applyFilterAsync(
+          originalImageData,
+          kernelValues,
+          edgeHandling,
+          effectiveTarget
+        );
+        if (!cancelled) {
+          onApplyFilter(filtered);
+          setIsProcessing(false);
+        }
+      } catch (e) {
+        console.error(e);
+        setIsProcessing(false);
+      }
+    };
+
+    // Небольшая задержка для отзывчивости UI
+    const timeout = setTimeout(run, 100);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [
+    kernelValues,
+    edgeHandling,
+    targetChannel,
+    previewEnabled,
+    originalImageData,
+    isOpen,
+    isGrayscale,
+    hasAlpha,
+  ]);
 
   const handleReset = () => {
     setKernelValues(JSON.parse(JSON.stringify(kernels.identity)));
@@ -72,7 +134,18 @@ export default function FilterTool({
 
   const handleApply = () => {
     if (originalImageData) {
-      const filtered = applyFilter(originalImageData, kernelValues, edgeHandling, targetChannel);
+      const effectiveTarget = isGrayscale
+        ? 'all'
+        : targetChannel === 'alpha' && !hasAlpha
+        ? 'all'
+        : targetChannel;
+
+      const filtered = applyFilter(
+        originalImageData,
+        kernelValues,
+        edgeHandling,
+        effectiveTarget
+      );
       onApplyFilter(filtered);
     }
     onClose();
@@ -95,8 +168,8 @@ export default function FilterTool({
   return (
     <dialog ref={dialogRef} className="filter-dialog">
       <div className="filter-content">
-        <h2>🎨 Фильтрация изображения (Свёртка)</h2>
-        
+        <h2>🎨 Фильтрация (Свёртка)</h2>
+
         <div className="filter-preview-check">
           <label>
             <input
@@ -105,6 +178,7 @@ export default function FilterTool({
               onChange={(e) => setPreviewEnabled(e.target.checked)}
             />
             👁️ Предпросмотр
+            {isProcessing && <span className="processing"> (обработка...)</span>}
           </label>
         </div>
 
@@ -112,14 +186,15 @@ export default function FilterTool({
           <label>📋 Предустановленные фильтры:</label>
           <select
             value={selectedPreset}
-            onChange={(e) => setSelectedPreset(e.target.value as KernelPreset)}
+            onChange={(e) => applyPreset(e.target.value as KernelPreset)}
           >
             <option value="identity">🟦 Тождественное отображение</option>
             <option value="sharpen">✨ Повышение резкости</option>
             <option value="gaussian">🌫️ Фильтр Гаусса (размытие)</option>
             <option value="boxBlur">📦 Прямоугольное размытие</option>
-            <option value="prewittX">⬅️ Прюитт (горизонтальный)</option>
-            <option value="prewittY">⬆️ Прюитт (вертикальный)</option>
+            <option value="prewittX">➡️ Прюитт (горизонтальные границы)</option>
+            <option value="prewittY">⬆️ Прюитт (вертикальные границы)</option>
+            {selectedPreset === 'custom' && <option value="custom">✏️ Свой вариант</option>}
           </select>
         </div>
 
@@ -161,11 +236,20 @@ export default function FilterTool({
               value={targetChannel}
               onChange={(e) => setTargetChannel(e.target.value as TargetChannel)}
             >
-              <option value="all">🌈 Все каналы (RGB)</option>
-              <option value="red">🔴 Только Red</option>
-              <option value="green">🟢 Только Green</option>
-              <option value="blue">🔵 Только Blue</option>
-              <option value="alpha">◻️ Только Alpha</option>
+              {isGrayscale ? (
+                <>
+                  <option value="all">Grayscale</option>
+                  {hasAlpha && <option value="alpha">Alpha</option>}
+                </>
+              ) : (
+                <>
+                  <option value="all">🌈 Все каналы (RGB)</option>
+                  <option value="red">🔴 Только Red</option>
+                  <option value="green">🟢 Только Green</option>
+                  <option value="blue">🔵 Только Blue</option>
+                  {hasAlpha && <option value="alpha">◻️ Только Alpha</option>}
+                </>
+              )}
             </select>
           </div>
         </div>
