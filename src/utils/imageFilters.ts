@@ -188,12 +188,12 @@ export async function applyFilterAsync(
 
   const normalizedKernel = normalizeKernel(kernel);
   const padded = padImage(srcData, width, height, edgeHandling);
+  
   const paddedWidth = width + 2;
-  const paddedHeight = height + 2;
 
   const result = new ImageData(width, height);
 
-  const apply = async (channelOffset: number, target: 'r' | 'g' | 'b' | 'a') => {
+  const apply = async (channelOffset: number) => {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         let sum = 0;
@@ -223,16 +223,16 @@ export async function applyFilterAsync(
   result.data.set(srcData.data);
 
   if (targetChannel === 'all' || targetChannel === 'red') {
-    await apply(0, 'r');
+    await apply(0);
   }
   if (targetChannel === 'all' || targetChannel === 'green') {
-    await apply(1, 'g');
+    await apply(1);
   }
   if (targetChannel === 'all' || targetChannel === 'blue') {
-    await apply(2, 'b');
+    await apply(2);
   }
   if (targetChannel === 'alpha') {
-    await apply(3, 'a');
+    await apply(3);
   }
 
   return result;

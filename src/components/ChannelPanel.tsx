@@ -34,7 +34,7 @@ export default function ChannelPanel({ imageData, colorDepth, onChannelsChange }
   // 32 бит = RGBA (4 канала)
   const hasAlpha = colorDepth === 32 || colorDepth === 16;
   const isGrayscale = colorDepth === 8 || colorDepth === 16;
-  const hasRGB = colorDepth === 24 || colorDepth === 32;
+
 
   useEffect(() => {
     if (!imageData) return;
